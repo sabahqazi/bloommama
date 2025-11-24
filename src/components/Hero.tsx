@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trackCTAClick } from '../services/analytics';
+import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,35 +26,36 @@ const Hero = () => {
     handleSearch(pill);
   };
 
-  const handleSearch = (query: string = searchQuery) => {
+  const handleSearch = async (query: string = searchQuery) => {
     const queryToUse = query || searchQuery;
-    const defaultAnswer = "Thanks for your question! Try the experience by choosing the questions above! Once the app is launched, I will provide a detailed breakdown of these changes along with tips for a faster recovery. If you're interested, join the waitlist!";
-    const isPredefinedQuery = pills.includes(queryToUse);
-    if (!isPredefinedQuery && queryToUse.trim() !== "") {
-      setAnswer(defaultAnswer);
-      setShowAnswer(true);
+    
+    if (queryToUse.trim() === "") {
+      setShowAnswer(false);
       return;
     }
-    if (queryToUse === "I had a vaginal birth. Why do I still look pregnant even after 3 weeks?") {
-      setAnswer(`Mommique answer: I understand looking pregnant 3 weeks after giving birth can be concerning! It's normal due to: Uterus shrinking (takes up to 6 weeks) ; Stretched abdominal muscles ; Possible fluid retention ; Potential diastasis recti (abdominal muscle separation)\n\n${defaultAnswer}`);
-      setShowAnswer(true);
-    } else if (queryToUse === "How do I know if my baby is getting enough milk?") {
-      setAnswer(`Mommique answer: I understand your concerned about the baby. A contented baby who seems satisfied after feeding, with at least 6 wet diapers and 3-4 bowel movements daily, is generally a good indicator of adequate milk intake. ${defaultAnswer}`);
-      setShowAnswer(true);
-    } else if (queryToUse === "When will my postpartum bleeding stop?") {
-      setAnswer(`Mommique answer: I understand the bleeding is very painful and discomforting. The Postpartum bleeding (lochia) lasts 4 to 6 weeks after giving birth, though it can sometimes extend up to 8 weeks. The bleeding gradually decreases in flow and changes color. If your bleeding suddenly becomes heavy is accompanied by symptoms like fever or severe pain, contact your healthcare provider.\n\n${defaultAnswer}`);
-      setShowAnswer(true);
-    } else if (queryToUse === "I had a C-section. When can I start exercising again after giving birth?") {
-      setAnswer(`Mommique answer: After a C-section, you should wait 6-8 weeks before starting any exercise routine. It's essential to let your body heal properly as this is major abdominal surgery. Start with gentle walking when you feel ready, and gradually increase intensity. Always consult with your healthcare provider before beginning any postpartum exercise program.\n\n${defaultAnswer}`);
-      setShowAnswer(true);
-    } else if (queryToUse === "Is it normal for my baby to wake up every 2 hours?") {
-      setAnswer(`Mommique answer: I know this can feel exhausting for you Momma, but It's completely normal for your baby to wake up every 2 hours, especially in the newborn stage. Newborns have small stomachs and need to feed frequently, which leads to frequent wake-ups. This ensures your baby gets the nourishment and comfort they need.\n\n${defaultAnswer}`);
-      setShowAnswer(true);
-    } else if (queryToUse.trim() !== "") {
-      setAnswer(defaultAnswer);
-      setShowAnswer(true);
-    } else {
-      setShowAnswer(false);
+
+    setAnswer("Getting answer from Bloom Mama AI...");
+    setShowAnswer(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('answer-question', {
+        body: { question: queryToUse }
+      });
+
+      if (error) {
+        console.error('Error calling AI:', error);
+        setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
+        return;
+      }
+
+      if (data?.answer) {
+        setAnswer(`bloom mama's answer: ${data.answer}\n\nWant personalized support 24/7? Join our waitlist today!`);
+      } else {
+        setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
     }
   };
 
@@ -117,38 +119,16 @@ const Hero = () => {
             </button>
           </div>
           
-          {showAnswer && <div className="mb-4 text-gray-800 px-4 py-3 rounded-lg bg-pink-50 border border-pink-100">
+            {showAnswer && <div className="mb-4 text-gray-800 px-4 py-3 rounded-lg bg-pink-50 border border-pink-100">
               <p className="text-sm whitespace-pre-line">
-                {answer.startsWith("Mommique answer:") ? <>
+                {answer.startsWith("bloom mama's answer:") ? (
+                  <>
                     <em className="font-medium text-pink-700 block mb-1">bloom mama's answer:</em>
-                    <span className="text-gray-700">
-                      {searchQuery === "I had a vaginal birth. Why do I still look pregnant even after 3 weeks?" ? <>
-                          I understand looking pregnant 3 weeks after giving birth can be concerning! It's normal due to:
-                          <ul className="mt-2 ml-4 space-y-1">
-                            <li>• Uterus shrinking (takes up to 6 weeks)</li>
-                            <li>• Stretched abdominal muscles</li>
-                            <li>• Possible fluid retention</li>
-                            <li>• Potential diastasis recti (abdominal muscle separation)</li>
-                          </ul>
-                          
-                          <p className="mt-3">Once the app is launched, I will provide a detailed breakdown of these changes along with tips for a faster recovery. If you're interested, join the waitlist!</p>
-                        </> : searchQuery === "How do I know if my baby is getting enough milk?" ? <>
-                          I understand your concerned about the baby. A contented baby who seems satisfied after feeding, with at least 6 wet diapers and 3-4 bowel movements daily, is generally a good indicator of adequate milk intake.
-                          
-                          <p className="mt-3">Once the app is launched, I will provide a detailed breakdown of these changes along with tips for a faster recovery. If you're interested, join the waitlist!</p>
-                        </> : searchQuery === "When will my postpartum bleeding stop?" ? <>
-                          I understand the bleeding is very painful and discomforting. The Postpartum bleeding (lochia) lasts 4 to 6 weeks after giving birth, though it can sometimes extend up to 8 weeks. The bleeding gradually decreases in flow and changes color.
-                          
-                          <p className="mt-3">If your bleeding suddenly becomes heavy is accompanied by symptoms like fever or severe pain, contact your healthcare provider.</p>
-                        </> : searchQuery === "I had a C-section. When can I start exercising again after giving birth?" ? <>
-                          After a C-section, you should wait 6-8 weeks before starting any exercise routine. It's essential to let your body heal properly as this is major abdominal surgery. Start with gentle walking when you feel ready, and gradually increase intensity.
-                          
-                          <p className="mt-3">Always consult with your healthcare provider before beginning any postpartum exercise program. Once the app is launched, I will provide more personalized guidance. If you're interested, join the waitlist!</p>
-                        </> : searchQuery === "Is it normal for my baby to wake up every 2 hours?" ? <>
-                          I know this can feel exhausting for you Momma, but It's completely normal for your baby to wake up every 2 hours, especially in the newborn stage. Newborns have small stomachs and need to feed frequently, which leads to frequent wake-ups. This ensures your baby gets the nourishment and comfort they need.
-                        </> : answer.substring(answer.indexOf(":") + 1)}
-                    </span>
-                  </> : answer}
+                    <span className="text-gray-700">{answer.substring(answer.indexOf(":") + 1).trim()}</span>
+                  </>
+                ) : (
+                  answer
+                )}
               </p>
             </div>}
           
