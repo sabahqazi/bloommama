@@ -11,7 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    const { question } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { question } = body;
     
     if (!question) {
       return new Response(
