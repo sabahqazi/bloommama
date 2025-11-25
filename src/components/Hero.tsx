@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogClose, DialogTitle } from "@/components/ui
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trackCTAClick } from '../services/analytics';
-import { supabase } from "@/integrations/supabase/client";
+// Temporarily commenting out to allow page to load while env vars are being fixed
+// import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,15 +39,24 @@ const Hero = () => {
     setShowAnswer(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('answer-question', {
-        body: { question: queryToUse }
-      });
+      // Temporarily using fetch until Supabase env vars are properly loaded
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/answer-question`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          },
+          body: JSON.stringify({ question: queryToUse })
+        }
+      );
 
-      if (error) {
-        console.error('Error calling AI:', error);
-        setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
-        return;
+      if (!response.ok) {
+        throw new Error('Failed to get answer');
       }
+
+      const data = await response.json();
 
       if (data?.answer) {
         setAnswer(`bloom mama's answer: ${data.answer}\n\nWant personalized support 24/7? Join our waitlist today!`);
