@@ -42,6 +42,8 @@ const Hero = () => {
         body: { question: queryToUse }
       });
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
         console.error('Error calling AI:', error);
         setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
