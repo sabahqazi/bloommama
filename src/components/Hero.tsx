@@ -38,13 +38,13 @@ const Hero = () => {
     setShowAnswer(true);
 
     try {
-      console.log('Calling edge function with question:', queryToUse);
+      console.log('Calling RAG edge function with question:', queryToUse);
       
-      const { data, error } = await supabase.functions.invoke('answer-question', {
+      const { data, error } = await supabase.functions.invoke('rag-answer', {
         body: { question: queryToUse }
       });
 
-      console.log('Edge function response:', { data, error });
+      console.log('RAG edge function response:', { data, error });
 
       if (error) {
         console.error('Edge function error:', error);
@@ -53,7 +53,12 @@ const Hero = () => {
       }
 
       if (data?.answer) {
-        setAnswer(`bloom mama's answer: ${data.answer}\n\nWant personalized support 24/7? Join our waitlist today!`);
+        let response = `bloom mama's answer: ${data.answer}`;
+        if (data.sources && data.sources.length > 0) {
+          response += `\n\n📚 Sources: ${data.sources.join(', ')}`;
+        }
+        response += `\n\nWant personalized support 24/7? Join our waitlist today!`;
+        setAnswer(response);
       } else {
         setAnswer("I'm having trouble connecting right now. Please try again in a moment or join our waitlist for priority access!");
       }
